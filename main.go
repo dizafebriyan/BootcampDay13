@@ -1,29 +1,37 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"profile/connection"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
 
 // nama dari structnya adalah Blog
 type Blog struct {
-	Title     string
-	Content   string
-	StartDate string
-	EndDate   string
-	box1      string
-	box2      string
-	box3      string
-	box4      string
+	ID           int
+	Title        string
+	Content      string
+	StartDate    time.Time
+	EndDate      time.Time
+	Technologies string
+	// box1      string
+	// box2      string
+	// box3      string
+	// box4      string
+	PostDate time.Time
+	authorid int
 }
 
 var dataProject = []Blog{}
 
 func main() {
+	connection.DatabaseConnect()
 	// e := echo.New()
 
 	// e.GET("/", func(c echo.Context) error {
@@ -53,6 +61,21 @@ func main() {
 }
 
 func home(c echo.Context) error {
+	data, _ := connection.Conn.Query(context.Background(), "SELECT id_serial,title,description,start_date,end_date,technologies,postdate,authorid FROM tb_projects")
+
+	var result []Blog
+	for data.Next() {
+		var each = Blog{}
+		err := data.Scan(&each.ID, &each.Title, &each.Content, &each.StartDate, &each.EndDate, &each.Technologies, &each.PostDate, &each.authorid)
+		//fungsi merubah format penulisan tanggal
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return c.JSON(http.StatusInternalServerError, map[string]string{"message": err.Error()})
+		}
+		result = append(result, each)
+	}
+
 	var tmpl, err = template.ParseFiles("views/index.html")
 
 	// data := map[string]interface{}{
@@ -64,7 +87,7 @@ func home(c echo.Context) error {
 	}
 
 	projects := map[string]interface{}{
-		"project": dataProject,
+		"project": result,
 	}
 
 	return tmpl.Execute(c.Response(), projects)
@@ -131,14 +154,11 @@ func blogDetail(c echo.Context) error {
 	for i, data := range dataProject {
 		if id == i {
 			ProjectDetail = Blog{
-				Title:     data.Title,
-				Content:   data.Content,
-				StartDate: data.StartDate,
-				EndDate:   data.EndDate,
-				box1:      data.box1,
-				box2:      data.box2,
-				box3:      data.box3,
-				box4:      data.box4,
+				Title:        data.Title,
+				Content:      data.Content,
+				StartDate:    data.StartDate,
+				EndDate:      data.EndDate,
+				Technologies: data.Technologies,
 			}
 		}
 	}
@@ -165,24 +185,28 @@ func addmyproject(c echo.Context) error {
 	cbox3 := c.FormValue("full")
 	cbox4 := c.FormValue("ml")
 
+	datestart, _ := time.Parse("01-02-2006", startDate)
+	dateend, _ := time.Parse("01-02-2006", endDate)
+	// if error != nil {
+	// 	fmt.Println(error)
+	// 	return
+	// }
+
 	println("Title : " + title)
 	println("Content : " + content)
-	println("Start Date : " + startDate)
-	println("End Date : " + endDate)
+	fmt.Println("Start Date : ", datestart)
+	fmt.Println("End Date : ", dateend)
 	println("Box IoT : " + cbox1)
 	println("Box UI UX : " + cbox2)
 	println("Box FullStack : " + cbox3)
 	println("Box Machine Learning : " + cbox4)
 
 	var newProject = Blog{
-		Title:     title,
-		Content:   content,
-		StartDate: startDate,
-		EndDate:   endDate,
-		box1:      cbox1,
-		box2:      cbox2,
-		box3:      cbox3,
-		box4:      cbox4,
+		Title:        title,
+		Content:      content,
+		StartDate:    datestart,
+		EndDate:      dateend,
+		Technologies: cbox1 + cbox2 + cbox3 + cbox4,
 	}
 
 	dataProject = append(dataProject, newProject)

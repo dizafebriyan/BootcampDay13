@@ -43,3 +43,19 @@ func () getFirstName() string {
     return FirstName
 }
 ```
+
+# PostGre (Day 13)
+
+package use to connect golang and postgre : 
+```bash
+go get github.com/jackc/pgx/v4 
+```
+
+URL connection database :
+
+`postgres://user:password@host:port/dbname`
+- user = user dari database
+- password = password dari database
+- host = host database, secara local akan menggunakan localhost
+- port = port database
+- dbname = nama database
